@@ -14,8 +14,11 @@ jobs:
       - name: Build
         run: msbuild autoclicker.sln /p:Configuration=Release /p:Platform=x64
 
+      - name: Find exe
+        run: Get-ChildItem -Recurse -Filter *.exe
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: toadclicker
-          path: x64/Release/*.exe
+          path: "**/*.exe"
