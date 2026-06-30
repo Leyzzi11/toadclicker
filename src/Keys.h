@@ -260,16 +260,16 @@ namespace toad
 	inline static const std::unordered_map<int, int> mc_as_vkc
 	{
 		{ 1, VK_ESCAPE },	// Escape
-		{ 2, VK_1 },		// 1
-		{ 3, VK_2 },		// 2
-		{ 4, VK_3 },		// 3
-		{ 5, VK_4 },		// 4
-		{ 6, VK_5 },		// 5
-		{ 7, VK_6 },		// 6
-		{ 8, VK_7 },		// 7
-		{ 9, VK_8 },		// 8
-		{ 10, VK_9 },		// 9
-		{ 11, VK_0 },		// 0
+		{ 2, '1' },		// 1
+		{ 3, '2' },		// 2
+		{ 4, '3' },		// 3
+		{ 5, '4' },		// 4
+		{ 6, '5' },		// 5
+		{ 7, '6' },		// 6
+		{ 8, '7' },		// 7
+		{ 9, '8' },		// 8
+		{ 10, '9' },		// 9
+		{ 11, '0' },		// 0
 		{ 12, VK_OEM_MINUS },	// -
 		{ 13, VK_OEM_PLUS },	// =
 		{ 14, VK_BACK },	// Backspace
@@ -301,7 +301,7 @@ namespace toad
 		{ 40, VK_OEM_7 },	// '
 		{ 41, VK_OEM_3 },	// `
 		{ 42, VK_SHIFT },	// Left Shift
-		{ 43, VK_OEM_5 },	// \
+		{ 43, VK_OEM_5 },	// backslash
 		{ 44, 'Z' },		// Z
 		{ 45, 'X' },		// X
 		{ 46, 'C' },		// C
