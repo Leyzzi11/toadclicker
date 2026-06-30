@@ -15,6 +15,9 @@ static void slot_update()
 	if (toad::clicker::slot_whitelist && toad::clicker::enabled && toad::window_is_focused(toad::clicking_window)) {
 		for (int i = 0; i < toad::hotbar_virtual_keycodes.size(); i++)
 		{
+			if (toad::hotbar_virtual_keycodes[i] == -1)
+				continue; // touche non reconnue pour ce slot, on ignore
+
 			if (GetAsyncKeyState(toad::hotbar_virtual_keycodes[i]) & 1)
 			{
 				toad::clicker::curr_slot = i;
