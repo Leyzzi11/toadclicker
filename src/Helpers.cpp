@@ -11,30 +11,30 @@ namespace toad
 		return GetForegroundWindow() == window;
 	}
 
-	bool map_hotkeys(const std::vector<std::string>& hotkeys, std::vector<int>& mapped)
+bool map_hotkeys(const std::vector<std::string>& hotkeys, std::vector<int>& mapped)
+{
+	for (int i = 0; i < hotkeys.size(); i++)
 	{
-		for (int i = 0, j = 2; i < hotkeys.size(); i++, j++)
+		const std::string& hotkey = hotkeys[i];
+		int keycode = -1;
+
+		try
 		{
-			const std::string& hotkey = hotkeys[i];
-			int keycode = -1;
-
-			try
-			{
-				keycode = std::stoi(hotkey);
-			}
-			catch (std::exception& e)
-			{
-				LOG_ERRORF("[map_hotkeys] %s", e.what());
-				return false;
-			}
-
-			auto it = mc_as_vkc.find(keycode == -1 ? j : keycode);
-			if (it != mc_as_vkc.end())
-				mapped.push_back(it->second);
+			keycode = std::stoi(hotkey);
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERRORF("[map_hotkeys] %s", e.what());
+			mapped.push_back(-1); // garde l'alignement même si la touche n'a pas pu être lue
+			continue;
 		}
 
-		return true;
+		auto it = mc_as_vkc.find(keycode);
+		mapped.push_back(it != mc_as_vkc.end() ? it->second : -1); // toujours push, même si pas trouvé, pour garder l'alignement
 	}
+
+	return true;
+}
 
 
 	std::vector<std::string> get_all_files_ext(const std::filesystem::path& path, const char* ext, const bool includeExt)
