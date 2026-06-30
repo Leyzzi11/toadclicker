@@ -13,6 +13,10 @@ namespace toad
 
 bool map_hotkeys(const std::vector<std::string>& hotkeys, std::vector<int>& mapped)
 {
+	// Minecraft encode les boutons souris en codes négatifs : -100 + index_bouton
+	// index_bouton : 0=gauche, 1=droit, 2=molette, 3=mouse4 (arrière), 4=mouse5 (avant)
+	static const int mouse_button_to_vk[] = { VK_LBUTTON, VK_RBUTTON, VK_MBUTTON, VK_XBUTTON1, VK_XBUTTON2 };
+
 	for (int i = 0; i < hotkeys.size(); i++)
 	{
 		const std::string& hotkey = hotkeys[i];
@@ -26,6 +30,14 @@ bool map_hotkeys(const std::vector<std::string>& hotkeys, std::vector<int>& mapp
 		{
 			LOG_ERRORF("[map_hotkeys] %s", e.what());
 			mapped.push_back(-1); // garde l'alignement même si la touche n'a pas pu être lue
+			continue;
+		}
+
+		if (keycode <= -96 && keycode >= -100)
+		{
+			// c'est un bouton souris, pas une touche clavier
+			int button_index = keycode + 100;
+			mapped.push_back(mouse_button_to_vk[button_index]);
 			continue;
 		}
 
