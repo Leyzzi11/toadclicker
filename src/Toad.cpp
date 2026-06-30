@@ -98,11 +98,14 @@ bool init_toad()
 	
 	LOG_DEBUG("[Init] Mapping hotkeys");
 	
-	// map LWJGL keys to virtual keycodes
+// map LWJGL keys to virtual keycodes
 	if (!map_hotkeys(mc_options, hotbar_virtual_keycodes))
 		LOG_ERROR("[Init] Failed to map hotkeys");
 	else
 		LOG_DEBUG("[Init] Mapped hotkeys");
+
+	for (size_t i = 0; i < hotbar_virtual_keycodes.size(); i++)
+		LOG_DEBUGF("[Init] slot %d -> vk 0x%X", (int)(i + 1), hotbar_virtual_keycodes[i]);
 	
 	p_SoundPlayer->GetAllCompatibleSounds(clicksounds::sounds_list);
 	
