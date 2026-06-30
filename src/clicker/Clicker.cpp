@@ -266,11 +266,17 @@ void LeftClicker::Thread(){
                 delayclick = toad::random_float(delaymin - 0.6f, delaymax + 1.f);
                 blatantdelay = toad::random_float(delaymin, delaymax);
 
-                if (!this->bonce)
+if (!this->bonce)
                 {
                     this->min = delaymin;
                     this->max = delaymax;
                     this->bonce = true;
+                }
+                else
+                {
+                    // empêche le drift (boost/drop) de sortir de la plage configurée
+                    if (this->min < delaymin) this->min = delaymin;
+                    if (this->max > delaymax) this->max = delaymax;
                 }
                 switch (toad::clicker::selected_enable_option)
                 {
@@ -380,12 +386,16 @@ void RightClicker::ThreadRight()
 
 			delayclick = toad::random_float(delaymin - 0.6f, delaymax + 1.f);
 			blatantdelay = toad::random_float(delaymin, delaymax);
-
-			if (!this->bonce)
+if (!this->bonce)
 			{
 				this->min = delaymin;
 				this->max = delaymax;
 				this->bonce = true;
+			}
+			else
+			{
+				if (this->min < delaymin) this->min = delaymin;
+				if (this->max > delaymax) this->max = delaymax;
 			}
 			switch (toad::clicker::r::right_selected_enable_option)
 			{
