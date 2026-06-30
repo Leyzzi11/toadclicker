@@ -18,7 +18,7 @@ static void slot_update()
 			if (toad::hotbar_virtual_keycodes[i] == -1)
 				continue; // touche non reconnue pour ce slot, on ignore
 
-			if (GetAsyncKeyState(toad::hotbar_virtual_keycodes[i]) & 1)
+			if (GetAsyncKeyState(toad::hotbar_virtual_keycodes[i]) & 0x8000)
 			{
 				toad::clicker::curr_slot = i;
 			}
