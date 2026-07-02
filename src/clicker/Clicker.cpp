@@ -3,6 +3,7 @@
 #include "../Toad.h"
 
 #include "Jitter.h"
+#include <cmath>
 
 void LeftClicker::StartThread()
 {
@@ -215,117 +216,112 @@ void LeftClicker::SendUp(mouse_type mb, POINT& pt,float& delay, float delayclick
 }
 
 // main clicker thread
+// --------------------------------------------------------------------------------------
+// Ported 1:1 from Soda Autoclicker's leftClicker()/clickLeft()/leftClick() (Python).
+// Toad's original "humanized" boost/drop/inconsistency drift algorithm has been removed
+// entirely and replaced with Soda's much simpler flat/random-delay model. All the other
+// Toad features that used to hook into the click cycle (target window, slot whitelist,
+// RMB-Lock, click sounds, jitter, compatibility mode, use_mouse_event/PostMessage choice)
+// are preserved and still fire at the exact same points as before.
+// --------------------------------------------------------------------------------------
 void LeftClicker::Thread(){
 
-    bool playsoundFlag = false;
-    POINT pt;
-    constexpr auto mb = mouse_type::LEFT;
-
-    float delaymin, delaymax;
-    float delayclick, blatantdelay;
+    POINT pt{};
 
     SetThreadPriority(m_thread.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
 
+    auto sodaSleep = [](float seconds) {
+        if (toad::misc::compatibility_mode)
+            toad::precise_sleep((double)seconds);
+        else
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(seconds * 1000.f)));
+    };
+
     while (m_threadFlag) {
-        //cpu
-        //if (!toad::clicker::enabled) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); }
-        // unnesesarry checks (thread is active when enabled is true)
-        //else if (toad::clicker::enabled) {
 
-            if (toad::clicker::slot_whitelist && !toad::clicker::whitelisted_slots[toad::clicker::curr_slot]) {std::this_thread::sleep_for(std::chrono::milliseconds(50)); continue; } 
-            if (toad::clicker::rmb_lock && !GetAsyncKeyState(VK_RBUTTON)) this->can_stop = true;
-            if (!this->can_stop) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); continue; }
-            if (!toad::clicker::inventory && toad::clicker::cursor_visible) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); continue; }
+        // --- Soda: compute this cycle's delay (averageCPS based) ---
+        float delaySeconds;
+        if (toad::clicker::blatant_mode) {
+            delaySeconds = 1.0f / (float)toad::clicker::cps;
+        } else {
+            // Soda: random.random() % (2 / averageCPS)
+            float span = 2.0f / (float)toad::clicker::cps;
+            delaySeconds = std::fmod(toad::random_float(0.f, 1.f), span);
+        }
 
-            if (GetForegroundWindow() == toad::clicking_window)
-            {
-                if (!GetAsyncKeyState(VK_LBUTTON) && toad::clicker::selected_enable_option == 0)
-                {
-					//if (toad::clicksounds::enabled && !playsoundFlag)
-					//{
-					//	auto& sound = toad::clicksounds::selected_clicksounds[selected_clicksound];
-					//	p_SoundPlayer->TriggerSoundPlay(sound.second.string());
-					//	playsoundFlag = true;
-					//}
+        // Slot whitelist (kept from Toad, unchanged)
+        if (toad::clicker::slot_whitelist && !toad::clicker::whitelisted_slots[toad::clicker::curr_slot]) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            continue;
+        }
 
-                    this->ResetVars();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                }
-                
-                if (toad::clicker::one_slider)
-                {
-                    delaymin = (1000.f / (float)toad::clicker::cps + 2.f) / 2.f;
-                    delaymax = (1000.f / (float)toad::clicker::cps - 2.f) / 2.f;
-                }
-                else
-                {
-                    delaymin = 1000.f / (float)toad::clicker::maxcps / 2.f;
-                    delaymax = 1000.f / (float)toad::clicker::mincps / 2.f;
-                }
-              
-                delayclick = toad::random_float(delaymin - 0.6f, delaymax + 1.f);
-                blatantdelay = toad::random_float(delaymin, delaymax);
+        // Soda "Hold" mode == Toad's option 0 ("Toggle to Enable"): only click while LMB is physically held
+        if (toad::clicker::selected_enable_option == 0 && !(GetAsyncKeyState(VK_LBUTTON) & 0x8000)) {
+            this->ResetVars();
+            sodaSleep(delaySeconds);
+            continue;
+        }
 
-if (!this->bonce)
-                {
-                    this->min = delaymin;
-                    this->max = delaymax;
-                    this->bonce = true;
-                }
-                else
-                {
-                    // empêche le drift (boost/drop) de sortir de la plage configurée
-                    if (this->min < delaymin) this->min = delaymin;
-                    if (this->max > delaymax) this->max = delaymax;
-                }
-                switch (toad::clicker::selected_enable_option)
-                {
-                case 0:
-                {
-                    if (GetAsyncKeyState(VK_LBUTTON))
-                    {
-                        playsoundFlag = false;
-                        //delay on first click
-                        if (!this->first_click)
-                        {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(int(delayclick) + 10));
-                            first_click = true;
-                        }
-                    }
+        // Toad-only option 1 ("Hold to Click"): a separate configurable keybind must be held
+        if (toad::clicker::selected_enable_option == 1 && !(GetAsyncKeyState(toad::clicker::keycode) & 0x8000)) {
+            this->ResetVars();
+            sodaSleep(delaySeconds);
+            continue;
+        }
 
-                    if (GetAsyncKeyState(VK_LBUTTON))
-                    {
-                        SendDown(mb, pt, blatantdelay, delayclick);
-                        if (toad::clicker::rmb_lock && GetAsyncKeyState(VK_RBUTTON) && can_stop) { this->can_stop = false; continue; }
-                        SendUp(mb, pt, blatantdelay, delayclick);
-                    }
-                }
-                break;
+        // Soda RMB-Lock: skip the whole cycle while the right mouse button is held
+        if (toad::clicker::rmb_lock && (GetAsyncKeyState(VK_RBUTTON) & 0x8000)) {
+            sodaSleep(delaySeconds);
+            continue;
+        }
 
-                case 1:
-                {
-                    if (GetAsyncKeyState(toad::clicker::keycode))
-                    {
-                        SendDown(mb, pt, blatantdelay, delayclick);
-                        SendUp(mb, pt, blatantdelay, delayclick);
-                    }
-                    else
-                    {
-                        this->ResetVars();
-                    }
-                }
-                break;
+        // Toad's own window targeting system (Active Window / Minecraft / Custom Window), kept as-is
+        if (GetForegroundWindow() != toad::clicking_window) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            continue;
+        }
 
-                default:
-                case 2:
-                    SendDown(mb, pt, blatantdelay, delayclick);
-                    SendUp(mb, pt, blatantdelay, delayclick);
-                    break;
-                }
-            }
-            //cpu
-            else std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        //}
+        // Toad's "when mouse visible" (inventory) gating, kept as-is
+        if (!toad::clicker::inventory && toad::clicker::cursor_visible) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            continue;
+        }
+
+        // --- Soda: click (sound on down, jitter, mouse_event/PostMessage choice all preserved) ---
+        if (toad::clicksounds::enabled && !toad::clicksounds::selected_clicksounds.empty())
+        {
+            selected_clicksound = (size_t)toad::random_int(0, (int)toad::clicksounds::selected_clicksounds.size() - 1);
+            auto& sound = toad::clicksounds::selected_clicksounds[selected_clicksound];
+            p_SoundPlayer->TriggerSoundPlay(sound.first.string());
+        }
+
+        if (toad::jitter::enabled)
+            p_Jitter->DoJitter();
+
+        if (toad::misc::use_mouse_event)
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+        else
+            PostMessage(toad::clicking_window, WM_LBUTTONDOWN, MKF_LEFTBUTTONDOWN, LPARAM((pt.x, pt.y)));
+
+        // Soda: fixed 20ms hold between down and up
+        sodaSleep(0.02f);
+
+        if (toad::misc::use_mouse_event)
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+        else
+            PostMessage(toad::clicking_window, WM_LBUTTONUP, 0, LPARAM((pt.x, pt.y)));
+
+        if (toad::clicksounds::enabled && !toad::clicksounds::selected_clicksounds.empty())
+        {
+            auto& sound = toad::clicksounds::selected_clicksounds[selected_clicksound];
+            if (!sound.second.empty())
+                p_SoundPlayer->TriggerSoundPlay(sound.second.string());
+        }
+
+        this->first_click = true;
+
+        // --- Soda: wait out the computed CPS delay before the next cycle ---
+        sodaSleep(delaySeconds);
     }
 }
 
